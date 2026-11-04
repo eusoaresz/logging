@@ -1,0 +1,17 @@
+### 1. Listar serviços (200)
+GET http://127.0.0.1:3000/servicos
+
+### 2. Criar agendamento (201). Repetir a chamada gera 409.
+POST http://127.0.0.1:3000/agendamentos
+Content-Type: application/json
+
+{"horario":"09:00"}
+
+### 3. Entrada inválida (400)
+POST http://127.0.0.1:3000/agendamentos
+Content-Type: application/json
+
+{"horario":"99:00"}
+
+### 4. Falha controlada (500)
+GET http://127.0.0.1:3000/demo/erro

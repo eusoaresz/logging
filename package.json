@@ -1,0 +1,23 @@
+{
+  "name": "corte-fino-logging-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Exemplo didático de logging em Node.js com Pino",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js | pino-pretty",
+    "demo": "node scripts/demo.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^5.3.0",
+    "pino": "^10.4.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.2.0"
+  }
+}
