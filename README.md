@@ -2,6 +2,10 @@
 
 Trabalho 2 de Programação Full Stack, tema 11. Exemplo pequeno de uma agenda de barbearia, inspirado no domínio do [Corte Fino](https://github.com/eusoaresz/corte_fino). O código desta demonstração foi escrito do zero: não é uma cópia do sistema completo.
 
+**Dupla:** Arthur Holz e Roger Soares.
+
+**Repositório:** [eusoaresz/logging](https://github.com/eusoaresz/logging).
+
 ## Executar
 
 Requisito: Node.js 22 ou superior e npm. Na pasta deste projeto:
@@ -35,7 +39,6 @@ Para mostrar `debug` no PowerShell:
 ```powershell
 $env:LOG_LEVEL = 'debug'
 npm run dev
-# Depois de encerrar com Ctrl+C:
 Remove-Item Env:LOG_LEVEL
 ```
 
@@ -68,10 +71,10 @@ Níveis Pino: `trace` 10, `debug` 20, `info` 30, `warn` 40, `error` 50 e `fatal`
 Exemplo central:
 
 ```js
-req.log.info({ evento: 'agendamento_criado', agendamentoId, horario }, 'Agendamento criado');
+req.log.info({ evento: 'agendamento_criado', agendamentoId: agendamento.id, horario }, 'Agendamento criado');
 ```
 
-O primeiro argumento contém campos pesquisáveis. O segundo é a mensagem para leitura humana. O exemplo acima é uma versão abreviada; veja a chamada completa na rota.
+O primeiro argumento contém campos pesquisáveis. O segundo é a mensagem para leitura humana. A chamada registra o identificador e o horário do agendamento criado na rota POST `/agendamentos`.
 
 Pino gera JSON no terminal. `pino-pretty` apenas muda a apresentação no desenvolvimento. Guardar, centralizar, buscar e definir retenção dos registros depende da infraestrutura escolhida.
 
@@ -92,13 +95,16 @@ npm run demo
 
 ## Entrega e apresentação
 
-- Apresentação: `apresentacao/logging-node-pino.pptx`.
-- Roteiro com divisão da dupla: `ROTEIRO.md`.
-- Código e instruções: esta pasta, sem `node_modules`.
-- Publicar os arquivos em um repositório e enviar o link para a turma.
+- Repositório da entrega: [eusoaresz/logging](https://github.com/eusoaresz/logging).
+- Slides: [PowerPoint atualizado](apresentacao/logging-node-pino-atualizado.pptx), com nove slides.
+- Explicação e divisão da dupla: [ROTEIRO.md](ROTEIRO.md).
+- Código: [src/](src/), [demonstração](scripts/demo.js) e [teste automatizado](test/app.test.js).
+- Confirmar o envio do link à turma e o acesso dos colegas ao material.
 - Confirmar a data da dupla entre 05/11/2026 e 12/11/2026 e participar das apresentações dos colegas.
 
-A publicação no GitHub e a participação em aula dependem da dupla. O repositório público desta entrega ainda não foi criado.
+O repositório já existe. Antes da aula, executar `npm ci`, `npm test` e `npm run demo` no computador da apresentação. A existência de um teste no projeto não comprova que ele foi executado nesse computador. Na demonstração, a sequência esperada é **200, 201, 409 e 500**; o último status é intencional.
+
+Para registrar as correções de documentação e a revisão de comentários, a mensagem de commit combinada é `Ajuste de Readme e conteúdo da apresentação`. A publicação dessas alterações deve ocorrer após a revisão e a confirmação da dupla.
 
 ## Fontes
 
@@ -110,4 +116,4 @@ A publicação no GitHub e a participação em aula dependem da dupla. O reposit
 - [Corte Fino: referência de domínio](https://github.com/eusoaresz/corte_fino)
 - [Transferbid: alternativa avaliada](https://github.com/arthurhlzt/transferbid)
 
-Requisitos conferidos no enunciado `trab2_262.pdf`, fornecido pelo aluno.
+Enunciado de referência: `trab2_262.pdf`, fornecido à dupla. Confirmar os critérios e as datas no documento original.

@@ -3,13 +3,11 @@ import { randomUUID } from 'node:crypto';
 
 export function criarApp(logger) {
   const app = express();
-  // Somente em memória: reiniciar o processo limpa os agendamentos.
   const agendamentos = new Map();
 
   app.use((req, res, next) => {
     const inicio = performance.now();
     const requestId = randomUUID();
-    // O child logger adiciona o mesmo contexto a todos os logs da requisição.
     req.log = logger.child({ requestId, metodo: req.method });
     res.setHeader('X-Request-Id', requestId);
     res.on('finish', () => {
@@ -47,7 +45,6 @@ export function criarApp(logger) {
     return res.status(201).json(agendamento);
   });
 
-  // Exclusiva deste exemplo local: falha intencional para explicar o nível error.
   app.get('/demo/erro', () => {
     throw new Error('Falha simulada ao consultar a agenda');
   });
@@ -63,7 +60,6 @@ export function criarApp(logger) {
       return res.status(413).json({ erro: 'Corpo da requisição muito grande.' });
     }
     req.log.error({ err, evento: 'falha_interna' }, 'Não foi possível concluir a operação');
-    // A resposta pública não expõe a stack trace.
     return res.status(500).json({ erro: 'Erro interno demonstrativo.' });
   });
   return app;

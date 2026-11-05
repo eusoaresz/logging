@@ -1,120 +1,235 @@
-# Roteiro da dupla
+# Roteiro da apresentação — Logging em Node.js com Pino
 
-Duração sugerida: 7 a 10 minutos. O PDF não determina duração. Ajustar se o professor orientar outro tempo. A demonstração manual é opcional e deve substituir parte da demonstração automática se o tempo estiver curto.
+**Dupla:** Arthur Holz e Roger Soares.  
+**Slides:** [logging-node-pino-atualizado.pptx](apresentacao/logging-node-pino-atualizado.pptx).  
+**Material:** [github.com/eusoaresz/logging](https://github.com/eusoaresz/logging).
 
-## Antes da aula
+Duração sugerida: 8 a 10 minutos. Ajustar conforme a orientação do professor. A divisão abaixo usa Pessoa 1 e Pessoa 2 para que Arthur e Roger escolham suas partes. As explicações acompanham os nove slides; os trechos de código servem como apoio, sem necessidade de ler o arquivo inteiro.
 
-1. Instalar Node.js 22+ e executar `npm ci` na pasta do projeto.
-2. Executar `npm test` e `npm run demo` no computador da apresentação. Manter `LOG_LEVEL` no padrão `info` para mostrar os eventos previstos.
-3. Abrir o PowerPoint atualizado, com os dois registros no slide 6, e o VS Code com os três arquivos de `src`. Colocar essa versão do PPTX na pasta `apresentacao/` do projeto antes de publicar.
-4. Aumentar a fonte do terminal e ensaiar a troca entre slides e código. Se houver demonstração manual, preparar dois terminais: um para o servidor e outro para enviar a requisição.
-5. Publicar o projeto e o PPTX no GitHub, confirmar que a turma consegue acessar e levar uma cópia local com as dependências já instaladas.
-6. Inserir os nomes da dupla na apresentação, se desejarem, e confirmar a data da apresentação com o professor.
+## Preparação antes da aula
 
-## Pessoa 1: conceito e configuração (3 a 4 minutos)
+1. Com Node.js 22 ou superior, executar `npm ci`, `npm test` e `npm run demo` na pasta do projeto, no computador da apresentação.
+2. Manter `LOG_LEVEL` no padrão `info`. Se houver um valor configurado no PowerShell, removê-lo com `Remove-Item Env:LOG_LEVEL` antes de iniciar, quando a variável existir.
+3. Abrir o PPTX indicado acima e o VS Code com `src/logger.js`, `src/app.js` e `scripts/demo.js`. Aumentar a fonte do terminal.
+4. Ensaiar a sequência esperada: **200, 201, 409 e 500**. O 500 é a falha planejada da demonstração.
+5. Confirmar o compartilhamento do repositório com a turma e o acesso dos colegas. Levar uma cópia local com as dependências instaladas.
+6. Confirmar com o professor a data da dupla entre 05/11/2026 e 12/11/2026. Os nomes de Arthur Holz e Roger Soares já aparecem no slide 1.
 
-Slides 1 a 4. Explicar: um cliente relata que não conseguiu agendar. Os logs permitem identificar se houve conflito de horário ou falha interna.
+## Pessoa 1 — slides 1 a 4: conceito e níveis (3 minutos)
 
-Mostrar `src/logger.js`: criação do Pino, nível padrão `info`, timestamp e campos ocultados por `redact`. Explicar que JSON separa informação em campos e permite filtragem por ferramentas. A ocultação cobre apenas os caminhos configurados; segredos não devem ser escritos na mensagem.
+### Slide 1 — Logging em Node.js
 
-Fala sugerida: “Usamos info para uma reserva criada, warn para uma tentativa de ocupar um horário já reservado e error para uma falha na operação. O nível mínimo controla o que aparece.”
+Apresentar a dupla, o tema e a escolha do Pino. O exemplo é uma pequena API de agenda de barbearia, inspirada no domínio do Corte Fino, sem depender do sistema completo.
 
-## Pessoa 2: código e demonstração (3 a 4 minutos)
+**Fala sugerida:** “Vamos mostrar como registrar o que acontece no backend. Nossa agenda permite observar uma reserva criada, uma tentativa de reservar o mesmo horário e uma falha simulada.”
 
-Slides 5 a 7. Mostrar `src/app.js`: logger filho com `requestId`, rota de criação e middleware de erro. Explicar que o logger filho acrescenta o contexto da requisição aos registros, sem precisar configurar um logger independente em cada rota. `src/server.js` inicia o servidor para uso manual; `scripts/demo.js` inicia uma API temporária, executa as chamadas e encerra.
+### Slide 2 — Para que servem os logs?
 
-No slide 6, comparar os dois registros abreviados da reserva de **10:00**: `agendamento_criado` informa a criação e `http_finalizado` resume a conclusão HTTP com status **201**. Ambos mostram o mesmo `requestId`:
+Usar a situação de um cliente que não conseguiu agendar. O registro permite descobrir qual operação ocorreu, qual foi a resposta e se houve conflito ou falha interna. O exemplo também registra a duração de cada requisição.
 
-```text
-398ffce7-c62e-427f-8d52-664993498863
+**Fala sugerida:** “A mensagem do cliente informa o problema percebido. Os logs ajudam a localizar a requisição e entender o que aconteceu dentro da aplicação.”
+
+### Slide 3 — Pino e os registros estruturados
+
+Apontar os campos do JSON ilustrativo:
+
+| Campo | Significado |
+| --- | --- |
+| `level` | Gravidade do registro; 30 corresponde a `info` |
+| `evento` | Tipo de acontecimento, como `agendamento_criado` |
+| `requestId` | Identificador que relaciona os registros da mesma requisição |
+| `msg` | Mensagem para leitura humana |
+
+**Fala sugerida:** “Cada informação fica em um campo. Isso permite buscar um evento ou filtrar todos os registros de uma requisição. O JSON do slide é ilustrativo e mostra apenas alguns campos.”
+
+### Slide 4 — Níveis de log
+
+| Nível | Uso no código |
+| --- | --- |
+| `debug` — 20 | Detalhe da consulta de serviços |
+| `info` — 30 | Agendamento criado |
+| `warn` — 40 | Horário ocupado ou entrada inválida |
+| `error` — 50 | Falha interna simulada |
+
+O padrão `info` permite `info`, `warn`, `error` e `fatal`; oculta `debug` e `trace`. Pino também oferece `trace` (10) e `fatal` (60). No projeto, `fatal` registra falha ao iniciar o servidor.
+
+**Transição:** “Agora vamos ver onde esses registros são configurados e como acompanham uma requisição.”
+
+## Pessoa 2 — slides 5 a 7: código e demonstração (4 a 5 minutos)
+
+### Slide 5 — A estrutura do exemplo
+
+Mostrar rapidamente os arquivos e explicar apenas as responsabilidades principais.
+
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `src/logger.js` | Cria e configura o logger Pino |
+| `src/app.js` | Define middleware, rotas e tratamento de erros |
+| `src/server.js` | Abre o servidor para uso manual |
+| `scripts/demo.js` | Inicia uma API temporária e executa quatro requisições reais |
+| `test/app.test.js` | Verifica respostas HTTP e conteúdo dos registros |
+
+#### 1. Configuração do logger — `src/logger.js`
+
+```js
+level: process.env.LOG_LEVEL || 'info',
+base: { app: 'corte-fino-demo' },
+timestamp: pino.stdTimeFunctions.isoTime,
+redact: ['senha', 'token', 'cliente.telefone', 'cliente.email'],
 ```
 
-Esse identificador veio da execução usada no slide. Cada nova requisição recebe outro valor, e o servidor também o devolve no cabeçalho `X-Request-Id` da resposta.
+`LOG_LEVEL` permite mudar o nível mínimo sem editar o código. `base` identifica a aplicação nos registros e `timestamp` usa data e hora em formato ISO. `redact` oculta valores nos caminhos estruturados configurados, caso sejam registrados. A aplicação não registra automaticamente o corpo das requisições.
 
-Fala sugerida: “Uma única requisição gerou dois registros: um informa que o agendamento foi criado e o outro resume o resultado HTTP. O mesmo requestId permite relacionar os dois.”
+**Fala sugerida:** “Configuramos o logger uma vez. Ele acrescenta informações comuns aos registros e protege campos específicos. Essa proteção não identifica qualquer segredo escrito livremente em uma mensagem.”
 
-No slide 7, executar:
+#### 2. Criação da aplicação e agenda — `src/app.js`
+
+`criarApp(logger)` recebe o logger e devolve a aplicação Express. A agenda é um `Map` criado dentro dessa função: cada aplicação tem suas próprias reservas. Reiniciar o servidor apaga os dados.
+
+`express.json({ limit: '10kb' })` interpreta o corpo JSON e limita seu tamanho. Na rota POST `/agendamentos`, o código valida se `horario` pertence aos horários permitidos, verifica se já está reservado e só então salva a reserva.
+
+```js
+if (agendamentos.has(horario)) {
+  req.log.warn({ evento: 'horario_ocupado', horario }, 'Tentativa de reservar horário ocupado');
+  return res.status(409).json({ erro: 'Horário já reservado.' });
+}
+```
+
+O `return` encerra esse caminho da rota, evitando que um horário ocupado seja salvo novamente. Uma reserva válida recebe um identificador, entra no `Map`, gera um registro `info` e retorna HTTP 201. Uma entrada inválida retorna 400 com `warn`.
+
+**Fala sugerida:** “A regra de negócio decide o resultado da reserva. O logger registra essa decisão: criação normal usa info e conflito de horário usa warn.”
+
+### Slide 6 — Uma requisição, um identificador
+
+Mostrar o início do middleware em `src/app.js`:
+
+```js
+const inicio = performance.now();
+const requestId = randomUUID();
+req.log = logger.child({ requestId, metodo: req.method });
+res.setHeader('X-Request-Id', requestId);
+```
+
+O middleware executa antes das rotas. `randomUUID()` gera um identificador para cada requisição. `logger.child` herda a configuração do logger principal e acrescenta `requestId` e método HTTP aos registros feitos com `req.log`. O cabeçalho devolve esse identificador ao cliente.
+
+O slide abrevia a chamada para `logger.child({ requestId })`; o código também inclui `metodo`.
+
+Mostrar em seguida o papel de `res.on('finish', ...)`: quando a resposta termina, o código registra `http_finalizado`, com status, rota e duração. A diferença entre `performance.now()` no início e no fim mede o tempo em milissegundos. O status define o nível desse registro: 500 ou superior usa `error`, 400 a 499 usa `warn` e os demais usam `info`.
+
+Comparar os dois eventos do slide, referentes à reserva de **10:00**:
+
+- `agendamento_criado`: descreve o resultado do negócio.
+- `http_finalizado`, status 201: descreve a conclusão HTTP.
+
+Ambos têm o mesmo `requestId`. O UUID mostrado no slide é um exemplo fixo; novos pedidos recebem outros valores. Duas tentativas de reservar o mesmo horário têm identificadores diferentes, porque são requisições diferentes.
+
+**Fala sugerida:** “Os registros não são duplicados: cada um informa uma parte da operação. O requestId permite juntá-los e acompanhar uma requisição do começo ao resultado.”
+
+### Slide 7 — Demonstração ao vivo
+
+Executar:
 
 ```sh
 npm run demo
 ```
 
-O script inicia uma API real em porta livre, faz chamadas HTTP e termina. Ler os resultados em ordem: **200, 201, 409 e 500**. Procurar `agendamento_criado`, `horario_ocupado` e `falha_interna`. A demonstração automática reserva **09:00**; o slide 6 usa **10:00**, mas o mecanismo é o mesmo.
+| Etapa | Requisição | Resultado | O que mostrar no log |
+| --- | --- | --- | --- |
+| 1 | GET `/servicos` | 200 | `http_finalizado`; a consulta em `debug` fica oculta no padrão |
+| 2 | POST `/agendamentos`, horário 09:00 | 201 | `agendamento_criado` em `info` e conclusão HTTP |
+| 3 | Repetir a reserva de 09:00 | 409 | `horario_ocupado` em `warn` e conclusão HTTP |
+| 4 | GET `/demo/erro` | 500 | `falha_interna` em `error`, com `err.stack`, e conclusão HTTP |
 
-Comparar o `requestId` impresso pelo script, lido do cabeçalho da resposta, com o evento de negócio e o evento `http_finalizado`. Na falha simulada, mostrar que a stack fica no campo `err.stack` do log, enquanto a resposta contém uma mensagem curta. O status 500 dessa etapa é intencional. No JSON, as quebras de linha da stack aparecem escapadas como `\n`.
+Na segunda etapa, comparar o `requestId` impresso pelo script com os dois registros da reserva. Na quarta, comparar o erro detalhado do log com a resposta curta enviada ao cliente.
 
-**Opcional: reproduzir manualmente o exemplo do slide 6.** No primeiro terminal PowerShell, iniciar o servidor na porta que funcionou no ensaio:
+#### 3. Tratamento central de erros — `src/app.js`
+
+A rota `/demo/erro` lança um `Error` propositalmente. O Express encaminha a falha ao middleware com assinatura `(err, req, res, next)`.
+
+```js
+req.log.error({ err, evento: 'falha_interna' }, 'Não foi possível concluir a operação');
+return res.status(500).json({ erro: 'Erro interno demonstrativo.' });
+```
+
+O objeto `err` permite ao Pino registrar os detalhes do erro, incluindo a stack trace, que indica por onde ele passou no código. A resposta não devolve essa stack. O mesmo middleware trata JSON malformado com 400 e corpo muito grande com 413.
+
+**Fala sugerida:** “O logger registra os detalhes para investigar a falha. Quem define a resposta HTTP é o tratamento de erros da aplicação. O Pino não corrige o erro.”
+
+#### 4. Como a demonstração funciona — `scripts/demo.js`
+
+`listen(0, '127.0.0.1')` solicita uma porta livre ao sistema. Após o servidor iniciar, o script usa `fetch` para executar as quatro chamadas em sequência, mostra status, corpo e `X-Request-Id`, e confere o status esperado. O bloco `finally` encerra o servidor mesmo se uma etapa falhar. Por isso cada execução começa com uma agenda vazia e não exige abrir a API antes.
+
+O script usa `console.error` para imprimir os resultados auxiliares na saída de erro; isso não significa que todas as etapas falharam. Os registros estruturados da API continuam sendo produzidos pelo Pino.
+
+A demonstração usa **09:00** e o slide 6 mostra **10:00**. O comportamento é o mesmo; os valores não precisam coincidir.
+
+## Fechamento conjunto — slides 8 e 9 (1 a 2 minutos)
+
+### Slide 8 — Cuidados e limites
+
+Reforçar três pontos:
+
+1. Evitar senhas e dados pessoais. `redact` protege apenas os caminhos configurados; não sanitiza qualquer texto da mensagem.
+2. Pino produz JSON na saída padrão. `pino-pretty`, usado por `npm run dev`, muda a formatação para facilitar a leitura. Armazenamento, rotação e retenção exigem configuração adicional.
+3. O exemplo é didático: agenda em memória, horários fixos e falha simulada, sem persistência das reservas.
+
+**Fala sugerida:** “Para usar esse padrão em um sistema real, precisamos escolher quais eventos registrar, proteger os dados e definir onde guardar e por quanto tempo manter os registros.”
+
+### Slide 9 — Referências e material da turma
+
+Apontar a documentação oficial do Pino e do Pino Pretty. Abrir ou mostrar o endereço do repositório, pois o slide menciona o material no Git sem exibir a URL completa:
+
+**https://github.com/eusoaresz/logging**
+
+**Fala sugerida:** “O repositório reúne o código, as instruções, o roteiro e a apresentação. Com esse exemplo, vimos como registrar eventos, classificar a gravidade e relacionar os registros de uma mesma requisição.”
+
+## Apoio para perguntas — não precisa apresentar tudo
+
+**O que o teste verifica?** `test/app.test.js` inicia uma API temporária e captura os logs em memória. Confere respostas HTTP, níveis de criação/conflito/erro, a correlação pelo `requestId`, a presença da stack no log e a ocultação de alguns campos sensíveis. Executar `npm test` antes da aula; a existência do arquivo não comprova uma execução bem-sucedida.
+
+**Por que há log em uma consulta se debug está oculto?** O evento de negócio da consulta usa `debug`, mas a conclusão HTTP com status 200 usa `info`. O segundo continua visível.
+
+**Onde encontro o requestId?** No campo dos registros e no cabeçalho `X-Request-Id` da resposta. Não faz parte do corpo JSON da resposta.
+
+**Como mostrar debug?** No PowerShell:
+
+```powershell
+$env:LOG_LEVEL = 'debug'
+npm run dev
+Remove-Item Env:LOG_LEVEL
+```
+
+**Por que abrir /agendamentos no navegador dá 404?** A barra de endereço envia GET, mas a criação exige POST com JSON. Para consultar no navegador, abrir `/servicos`.
+
+**Por que o 409 aparece como erro no PowerShell?** Respostas fora de 2xx são apresentadas dessa forma pela ferramenta. Aqui, o conflito é esperado.
+
+## Demonstração manual opcional
+
+Usar apenas se houver tempo ou se for necessário explicar melhor a correlação. No primeiro terminal PowerShell:
 
 ```powershell
 $env:PORT = '39127'
 npm start
 ```
 
-Deixar esse terminal aberto. No segundo terminal, executar em uma linha:
+No segundo terminal:
 
 ```powershell
 Invoke-RestMethod -Uri 'http://127.0.0.1:39127/agendamentos' -Method Post -ContentType 'application/json' -Body '{"horario":"10:00"}'
 ```
 
-Voltar ao primeiro terminal para mostrar `agendamento_criado` e `http_finalizado`, com status 201 e o mesmo `requestId`. Repetir a chamada gera 409 e os eventos `horario_ocupado` e `http_finalizado`. O PowerShell mostra essa resposta como erro porque o status não é 2xx; o conflito é esperado.
+Voltar ao primeiro terminal e localizar os eventos da criação e da conclusão HTTP com o mesmo `requestId`. Repetir a chamada gera 409. Reiniciar a API limpa as reservas.
 
-Abrir `/agendamentos` na barra do navegador envia GET e retorna 404, pois o exemplo só implementa POST nesse endereço. Para uma consulta no navegador, usar `http://127.0.0.1:39127/servicos`.
+Se a porta estiver ocupada (`EADDRINUSE`), escolher outra e ajustar a URL ou usar `npm run demo`. Não abrir `npm start` e `npm run dev` simultaneamente na mesma porta. Ao terminar, encerrar com Ctrl+C e executar `Remove-Item Env:PORT` no terminal em que a variável foi definida.
 
-Para comparar a formatação, parar `npm start` com Ctrl+C e executar `npm run dev` no mesmo terminal. O `pino-pretty` torna os logs mais legíveis. Parar com Ctrl+C antes de voltar a `npm start`; não executar ambos simultaneamente na mesma porta.
+## Entrega e atualização do repositório
 
-Se aparecer `EADDRINUSE`, a porta está em uso. `EACCES` indica acesso negado, sem identificar sozinho a causa. Escolher outra porta disponível e ajustar a URL da chamada, ou usar `npm run demo`, que escolhe uma porta livre automaticamente. A porta 39127 também pode estar ocupada em outro computador.
+O repositório já existe em [eusoaresz/logging](https://github.com/eusoaresz/logging). Não é necessário executar `git init` nem criar outro remoto. Confirmar o envio do link à turma, a execução no computador da aula e a presença nas apresentações dos colegas.
 
-Reiniciar o servidor limpa as reservas em memória. Cada execução de `npm run demo` já começa com uma agenda própria vazia. Depois do ensaio manual, encerrar o servidor e, se desejarem voltar ao padrão 3000 naquele terminal, executar `Remove-Item Env:PORT`.
+Para as correções combinadas, usar a mensagem de commit:
 
-## Fechamento conjunto (1 minuto)
-
-Slides 8 e 9. Comentar que dados pessoais e segredos não devem entrar nos logs. A demonstração não usa banco nem persiste reservas após reiniciar. Em um projeto real, adicionar o logger ao backend existente e configurar armazenamento e retenção dos registros. Mostrar o link do repositório compartilhado com a turma.
-
-## Perguntas prováveis
-
-**Por que Pino?** A configuração é curta e a saída JSON torna os campos visíveis. O trabalho pede Pino ou Winston; basta demonstrar um deles.
-
-**Pino corrige o erro?** Não. Registra informações para investigação. O tratamento do erro é feito pelo aplicativo.
-
-**Qual é a diferença entre warn e error?** Aqui, warn indica um conflito previsto; error indica uma falha que impediu a operação. Essa classificação é uma decisão do projeto.
-
-**Onde os logs ficam?** Neste exemplo, na saída padrão do processo. É possível redirecionar para arquivo ou conectar um coletor. Pino não cria um painel de monitoramento sozinho.
-
-**Por que a criação gera dois logs?** Um descreve o negócio (`agendamento_criado`) e outro resume o HTTP (`http_finalizado`). O `requestId` mostra que pertencem à mesma requisição. Nem toda chamada gera dois registros visíveis: em `/servicos`, o evento de consulta é `debug` e fica oculto no nível padrão `info`.
-
-**Onde encontro o requestId da resposta?** No cabeçalho `X-Request-Id`. O script de demonstração lê esse cabeçalho e imprime o valor. Ele não faz parte do corpo JSON da resposta.
-
-**Por que debug não aparece?** O nível padrão é `info`. No PowerShell, definir `$env:LOG_LEVEL = 'debug'` antes de iniciar permite os níveis debug e superiores. Depois de parar o processo, executar `Remove-Item Env:LOG_LEVEL` para voltar ao padrão nas próximas execuções.
-
-**Por que o navegador mostra “Rota não encontrada” em /agendamentos?** A barra de endereço envia GET, mas a criação exige POST com um corpo JSON. Usar o comando PowerShell do roteiro ou `npm run demo`.
-
-**Por que aparece “Horário já reservado”?** Uma chamada anterior já reservou esse horário no servidor atual. Usar outro horário permitido ou reiniciar o servidor para limpar a agenda.
-
-## Conferência do enunciado
-
-| Requisito | Material ou ação |
-| --- | --- |
-| Arquivo de apresentação Canva ou PPT | PPTX atualizado em `apresentacao/` |
-| Código demonstrando o pacote | `src/` e `scripts/demo.js` |
-| Explicar funcionamento do exemplo | Slides, README e este roteiro |
-| Disponibilizar arquivos no Git | Pendente: publicar e compartilhar link |
-| Projeto funcionando | Executar `npm test` e ensaiar no computador da aula |
-| Participação nas apresentações | Responsabilidade da dupla |
-| Apresentar no prazo | Confirmar 05/11/2026 ou 12/11/2026 com o professor |
-
-## Publicar como projeto independente
-
-Usar uma pasta de `trabalho-logging` independente de outros repositórios. Se ela estiver dentro de outro projeto Git, copiar para uma pasta separada antes de iniciar um novo repositório. Não incluir `node_modules`, `.build`, arquivos `.log` ou `.env`. Conferir se o PPTX da pasta `apresentacao/` é a versão com o slide 6 atualizado.
-
-Se a pasta ainda não tiver um repositório próprio, criar um repositório vazio no GitHub e, dentro da pasta independente, executar:
-
-```sh
-git init
-git add .
-git commit -m "Adiciona exemplo de logging com Pino e apresentação"
-git branch -M main
-git remote add origin URL_DO_REPOSITORIO_CRIADO
-git push -u origin main
+```text
+Ajuste de Readme e conteúdo da apresentação
 ```
 
-Substituir `URL_DO_REPOSITORIO_CRIADO` pelo endereço real. Se o repositório e o remoto já estiverem configurados, apenas registrar e enviar as alterações, sem repetir a criação do remoto. Conferir o acesso ao link compartilhado e incluí-lo no README e no último slide.
+Revisar as alterações e confirmar antes de enviá-las ao GitHub. O acesso de escrita da integração é uma configuração da conta, não uma mudança no código. Este roteiro não pressupõe que essa permissão já foi concedida.
